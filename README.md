@@ -1,6 +1,10 @@
 # Logghantering — labbmiljö (ITS25)
 
-Detta repo innehåller labbmiljön för kursen Logghantering, playbooks och forensisk bevisinsamling.
+Det repo vi ska använda innehåller labbmiljön för kursen Logghantering, playbooks och forensisk bevisinsamling.
+
+https://github.com/ironboy/logghantering-docker/tree/wazuh-only
+
+**Obs!** Initialt denna branch **wazuh only**.
 
 Miljön körs med Docker Compose och bygger på
 
@@ -29,7 +33,7 @@ Allt körs inne i containrar.
 
 ## 2. Hämta zip-fil av repot (du kan skapa ditt eget repo utifrån denna)
 
-Börja med denna branch, vi bygger på med andra med fler containrar efterhand:
+Börja med denna branch, **wazuh-only**, vi bygger på med andra med fler containrar efterhand:
 
 ```
 https://github.com/ironboy/logghantering-docker/archive/refs/heads/wazuh-only.zip
@@ -162,7 +166,7 @@ Logga in med:
 - **Användare:** `admin`
 - **Lösenord:** `SecretPassword`
 
-> ⚠️ Detta är **default-lösenord**. I en produktionsmiljö är första steget att
+> Detta är **default-lösenord**. I en produktionsmiljö är första steget att
 > byta dem. Vi behåller defaults i lab-miljön för enkelhetens skull — men
 > notera att det aldrig är ok i skarp drift.
 
@@ -252,6 +256,6 @@ Service-namn i denna miljö: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`
 
 ## 10. Vad händer härnäst?
 
-Detta repo kommer växa under kursens gång. Nya containrar för loggkällor och
+Detta repo kommer växa under kursens gång, med fler **branches**. Nya containrar för loggkällor och
 attackscenarier läggs till stegvis — du behöver bara köra `git pull` och sedan
 `docker compose up -d` för att få med nya delar.
