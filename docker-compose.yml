@@ -1,0 +1,13 @@
+include:
+  - wazuh/docker-compose.yml
+
+services:
+  offer-ssh:
+    build: ./offer-ssh
+    image: logghantering/offer-ssh:4.14.4
+    hostname: offer-ssh
+    restart: unless-stopped
+    ports:
+      - "2222:22"
+    depends_on:
+      - wazuh.manager
