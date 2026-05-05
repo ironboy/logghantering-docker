@@ -129,15 +129,71 @@ diskutera dem i klassen.
 
 ---
 
-### Generationshastighet
+### Trigger flog ligger och genererar **konstant**
 
-flog producerar:
-- Apache: en rad **var 2:a sekund**
-- Syslog: en rad **var 3:e sekund**
-- JSON: en rad **var 4:e sekund**
+Du behöver inte trigga flog manuellt — den startar automatiskt när
+containern startar och kör tre parallella processer i bakgrunden.
 
-Du kan justera takten i `flog-noise/entrypoint.sh` (`-d` flaggan).
+| Fil | Format | Takt | Per minut | Per timme |
+|---|---|---|---|---|
+| `apache.log` | apache_combined | 1 rad / **2 s** | 30 rader | 1 800 |
+| `syslog.log` | rfc3164 | 1 rad / **3 s** | 20 rader | 1 200 |
+| `json.log` | json | 1 rad / **4 s** | 15 rader | 900 |
+| **Totalt** | | | **65 rader/min** | **~3 900/h** |
 
-> **Varning:** filerna växer obegränsat. För labbmiljö är det inget problem
-> (några MB per dag), men kör inte detta över helger utan att rotera. För
-> produktion skulle man använda `logrotate` eller flog:s `-p` (split-by).
+Mängden är medvetet liten — det är "bakgrundsbrus", inte stresstest.
+
+### Verifiera att det rullar
+
+```bash
+docker compose exec flog-noise tail -f /var/log/flog/apache.log
+```
+
+Du ska se en ny rad ungefär varannan sekund.
+
+### Ändra intensitet
+
+Redigera `flog-noise/entrypoint.sh` — `-d`-flaggan styr fördröjningen:
+
+```bash
+flog -l -w -d 2s -f apache_combined ...    # default: 1 rad / 2 s
+flog -l -w -d 200ms -f apache_combined ... # 5 rader/sek = ~18 000/h
+flog -l -w -d 50ms -f apache_combined ...  # 20 rader/sek = "stress"
+```
+
+Bygg om:
+```bash
+docker compose up -d --build flog-noise
+```
+
+### "Burst" för demo
+
+Vill du skapa en plötslig spik mitt under en lektion — kör en engångskörning
+av flog **inne i containern**:
+
+```bash
+# 500 rader på en gång till apache.log
+docker compose exec flog-noise \
+    flog -n 500 -f apache_combined -t log -o /var/log/flog/apache.log -w
+```
+
+(`-w` skriver *över* filen — det blir 500 nya rader. Wazuh-agenten upptäcker
+ändringen och pumpar in dem på några sekunder.)
+
+### Vad du kan förvänta i dashboarden
+
+Eftersom flog producerar slumpade HTTP-statuskoder triggar Wazuh's
+web-accesslog-decoder regler på ungefär 30-40% av apache-raderna (de som
+har 4xx/5xx). Det blir cirka **10-12 alerts/minut** från apache-strömmen
+— en konstant baseline-aktivitet i dashboarden.
+
+Det är poängen: med flog ser miljön "levande" ut även när inga riktiga
+attacker pågår. När studenter sen kör attackerna från
+`nginx-foran-juice-shop`-branchen sticker dessa ut på ett sätt som
+är pedagogiskt rikt — *bland brus, inte i tystnad*.
+
+### Filstorlek över tid
+
+Filerna växer obegränsat. För labbmiljö är det inget problem (några MB per
+dag), men kör inte detta över helger utan att rotera. För produktion skulle
+man använda `logrotate` eller flog:s `-p` (split-by).
