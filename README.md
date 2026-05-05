@@ -2,9 +2,13 @@
 
 Det repo vi ska använda innehåller labbmiljön för kursen Logghantering, playbooks och forensisk bevisinsamling.
 
-https://github.com/ironboy/logghantering-docker/tree/nginx-foran-juice-shop
+https://github.com/ironboy/logghantering-docker/tree/flog
 
-**Obs!** Denna branch — **nginx-foran-juice-shop** — bygger ovanpå `juice-shop` och lägger en **nginx reverse proxy** framför Juice Shop. nginx access-loggen läses av Wazuh-agenten — och nu triggar klassiska web-attacker (SQL injection, path traversal, XSS) verkliga alerts i Wazuh. Se [README-nginx-attacks.md](./README-nginx-attacks.md) för exempel.
+**Obs!** Denna branch — **flog** — bygger ovanpå `nginx-foran-juice-shop` och lägger till en container som genererar **fake-loggar i tre olika format samtidigt** (apache combined, rfc3164 syslog, json). Det ger bakgrundsbrus i labbmiljön och låter studenter jämföra format direkt i Wazuh. Se [README-flog-formatjamforelse.md](./README-flog-formatjamforelse.md).
+
+Tidigare branchar har också separata dokument:
+- [README-nginx-attacks.md](./README-nginx-attacks.md) — verifierade web-attacker mot nginx-proxy
+- [README-juice-shop-wazuh-status.md](./README-juice-shop-wazuh-status.md) — söka i Wazuh efter juice-shop events
 
 Miljön körs med Docker Compose och bygger på
 
@@ -35,7 +39,7 @@ Allt körs inne i containrar.
 
 Hämta zippen för denna branch:
 
-https://github.com/ironboy/logghantering-docker/archive/refs/heads/nginx-foran-juice-shop.zip
+https://github.com/ironboy/logghantering-docker/archive/refs/heads/flog.zip
 
 Packa upp den och stå dig i projektets rot (där `docker-compose.yml` ligger).
 **Resten av kommandona i denna README körs från projektets rot** om inget annat sägs.
@@ -153,8 +157,9 @@ Kontrollera att alla containrar är `Up`:
 docker compose ps
 ```
 
-Du ska se sex rader: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`,
-`offer-ssh`, `offer-juice-shop` och `nginx-proxy` — samtliga med status `Up`.
+Du ska se sju rader: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`,
+`offer-ssh`, `offer-juice-shop`, `nginx-proxy` och `flog-noise` — samtliga
+med status `Up`.
 
 ---
 
@@ -245,6 +250,16 @@ exempel-attacker att köra mot stacken — och vilka Wazuh-regler som triggas.
 > vi ska kunna SE attacker mot dem i loggarna — kör dem **bara lokalt**,
 > exponera dem aldrig mot internet.
 
+### 7d. `flog-noise` — bakgrundsbrus i tre format
+
+Genererar **fake-loggar** kontinuerligt i tre olika format till tre olika
+filer, alla lästa av Wazuh-agenten. Inget exponeras mot host — det här är
+ett bakgrundsbrus så Wazuh ser ut att vara "levande" + en pedagogisk
+plattform för att jämföra hur olika logformat ser ut i samma SIEM.
+
+Se [README-flog-formatjamforelse.md](./README-flog-formatjamforelse.md) för
+detaljer om vilka format som triggar alerts (och varför vissa inte gör det).
+
 ---
 
 ## 8. Stoppa labbmiljön
@@ -333,7 +348,7 @@ Docker Desktop är inte igång. Starta det manuellt och försök igen.
 | SSH:a till offer-ssh | `ssh -p 2222 student@localhost` |
 | Öppna Juice Shop (via nginx) | `http://localhost:3000` |
 
-Service-namn i denna miljö: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`, `offer-ssh`, `offer-juice-shop`, `nginx-proxy`.
+Service-namn i denna miljö: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`, `offer-ssh`, `offer-juice-shop`, `nginx-proxy`, `flog-noise`.
 
 ---
 

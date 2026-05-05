@@ -32,3 +32,11 @@ services:
     depends_on:
       - wazuh.manager
       - offer-juice-shop
+
+  flog-noise:
+    build: ./flog-noise
+    image: logghantering/flog-noise:4.14.4
+    hostname: flog-noise
+    restart: unless-stopped
+    depends_on:
+      - wazuh.manager
