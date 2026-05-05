@@ -2,9 +2,9 @@
 
 Det repo vi ska använda innehåller labbmiljön för kursen Logghantering, playbooks och forensisk bevisinsamling.
 
-https://github.com/ironboy/logghantering-docker/tree/debian-offer-tillagt
+https://github.com/ironboy/logghantering-docker/tree/juice-shop
 
-**Obs!** Denna branch — **debian-offer-tillagt** — bygger ovanpå `wazuh-only` och lägger till en första "offer-container" (en debian-baserad SSH-server med Wazuh-agent installerad).
+**Obs!** Denna branch — **juice-shop** — bygger ovanpå `debian-offer-tillagt` och lägger till ytterligare en offer-container: en sårbar webbapplikation (OWASP Juice Shop) med Wazuh-agent installerad.
 
 Miljön körs med Docker Compose och bygger på
 
@@ -35,7 +35,7 @@ Allt körs inne i containrar.
 
 Hämta zippen för denna branch:
 
-https://github.com/ironboy/logghantering-docker/archive/refs/heads/debian-offer-tillagt.zip
+https://github.com/ironboy/logghantering-docker/archive/refs/heads/juice-shop.zip
 
 Packa upp den och stå dig i projektets rot (där `docker-compose.yml` ligger).
 **Resten av kommandona i denna README körs från projektets rot** om inget annat sägs.
@@ -153,8 +153,8 @@ Kontrollera att alla containrar är `Up`:
 docker compose ps
 ```
 
-Du ska se fyra rader: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard` och
-`offer-ssh` — samtliga med status `Up`.
+Du ska se fem rader: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`,
+`offer-ssh` och `offer-juice-shop` — samtliga med status `Up`.
 
 ---
 
@@ -181,14 +181,16 @@ Logga in med:
 
 ---
 
-## 7. Offer-containern (debian + SSH)
+## 7. Offer-containrar
 
-Denna branch lägger till en första "offer" — en bait-server som genererar
-loggar för Wazuh att samla in.
+Denna branch innehåller två "offer" — bait-servers som genererar loggar för
+Wazuh att samla in. Varje offer kör Wazuh-agent 4.14.4 inuti containern och
+registrerar sig automatiskt mot managern.
 
-- **Service-namn:** `offer-ssh`
+### 7a. `offer-ssh` — debian + SSH-server
+
 - **Bas:** `debian:bookworm-slim` med `openssh-server`, `rsyslog` och
-  Wazuh-agent 4.14.4 förinstallerade
+  Wazuh-agent förinstallerade
 - **SSH-port:** `2222` på din host (mappar till port `22` i containern)
 - **Lab-användare:**
   - `student` med lösenord `lab` (vanlig user)
@@ -202,12 +204,36 @@ ssh -p 2222 student@localhost
 # lösenord: lab
 ```
 
-Misslyckade och lyckade inloggningar ska dyka upp i Wazuh-dashboarden under
+Misslyckade och lyckade inloggningar dyker upp i Wazuh-dashboarden under
 **Threat Hunting** → filtrera på `agent.name: offer-ssh`.
 
-> Containern är medvetet osäkert konfigurerad. Den är till för att vi ska
-> kunna SE attacker mot den i loggarna — kör den **bara lokalt**, exponera den
-> aldrig mot internet.
+### 7b. `offer-juice-shop` — OWASP Juice Shop
+
+[OWASP Juice Shop](https://owasp.org/www-project-juice-shop/) är en avsiktligt
+sårbar Node.js-webapp som täcker hela OWASP Top 10. Den används flitigt i
+webbsäkerhetskurser — du kanske känner igen den.
+
+- **Bas:** `debian:bookworm-slim` med Wazuh-agent + Juice Shop v17.3.0 (kopierad
+  från `bkimminich/juice-shop:v17.3.0`)
+- **Webb-port:** `3000` på din host
+
+**Testa:**
+
+```
+http://localhost:3000
+```
+
+Containerns app-loggar samlas in av Wazuh-agenten. För att se dem (och alerts
+från SCA-skanningen): filtrera på `agent.name: offer-juice-shop` i
+dashboarden.
+
+Mer detaljerade instruktioner — hur du söker, vilka queries som är mest
+användbara, och vad du gör om du saknar specifika events — finns i
+[README-juice-shop-wazuh-status.md](./README-juice-shop-wazuh-status.md).
+
+> Båda containrarna är medvetet osäkert konfigurerade. De är till för att vi
+> ska kunna SE attacker mot dem i loggarna — kör dem **bara lokalt**, exponera
+> dem aldrig mot internet.
 
 ---
 
@@ -267,7 +293,7 @@ Vanligaste fel: indexern har inte hunnit starta klart. Vänta ytterligare en min
 Höj minnet som Docker Desktop får använda:
 - Docker Desktop → Settings → Resources → Memory → minst 6 GB.
 
-### Port 443 / 9200 / 1514 / 2222 redan upptagen
+### Port 443 / 9200 / 1514 / 2222 / 3000 redan upptagen
 
 Något annat program använder porten. På macOS/Linux:
 
@@ -295,8 +321,9 @@ Docker Desktop är inte igång. Starta det manuellt och försök igen.
 | Stoppa + radera volymer | `docker compose down -v` |
 | Gå in i en container | `docker compose exec <service> bash` |
 | SSH:a till offer-ssh | `ssh -p 2222 student@localhost` |
+| Öppna Juice Shop | `http://localhost:3000` |
 
-Service-namn i denna miljö: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`, `offer-ssh`.
+Service-namn i denna miljö: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`, `offer-ssh`, `offer-juice-shop`.
 
 ---
 

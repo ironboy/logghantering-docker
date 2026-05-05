@@ -11,3 +11,13 @@ services:
       - "2222:22"
     depends_on:
       - wazuh.manager
+
+  offer-juice-shop:
+    build: ./offer-juice-shop
+    image: logghantering/offer-juice-shop:4.14.4
+    hostname: offer-juice-shop
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - wazuh.manager
