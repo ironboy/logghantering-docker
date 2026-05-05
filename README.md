@@ -2,9 +2,9 @@
 
 Det repo vi ska använda innehåller labbmiljön för kursen Logghantering, playbooks och forensisk bevisinsamling.
 
-https://github.com/ironboy/logghantering-docker/tree/juice-shop
+https://github.com/ironboy/logghantering-docker/tree/nginx-foran-juice-shop
 
-**Obs!** Denna branch — **juice-shop** — bygger ovanpå `debian-offer-tillagt` och lägger till ytterligare en offer-container: en sårbar webbapplikation (OWASP Juice Shop) med Wazuh-agent installerad.
+**Obs!** Denna branch — **nginx-foran-juice-shop** — bygger ovanpå `juice-shop` och lägger en **nginx reverse proxy** framför Juice Shop. nginx access-loggen läses av Wazuh-agenten — och nu triggar klassiska web-attacker (SQL injection, path traversal, XSS) verkliga alerts i Wazuh. Se [README-nginx-attacks.md](./README-nginx-attacks.md) för exempel.
 
 Miljön körs med Docker Compose och bygger på
 
@@ -35,7 +35,7 @@ Allt körs inne i containrar.
 
 Hämta zippen för denna branch:
 
-https://github.com/ironboy/logghantering-docker/archive/refs/heads/juice-shop.zip
+https://github.com/ironboy/logghantering-docker/archive/refs/heads/nginx-foran-juice-shop.zip
 
 Packa upp den och stå dig i projektets rot (där `docker-compose.yml` ligger).
 **Resten av kommandona i denna README körs från projektets rot** om inget annat sägs.
@@ -153,8 +153,8 @@ Kontrollera att alla containrar är `Up`:
 docker compose ps
 ```
 
-Du ska se fem rader: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`,
-`offer-ssh` och `offer-juice-shop` — samtliga med status `Up`.
+Du ska se sex rader: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`,
+`offer-ssh`, `offer-juice-shop` och `nginx-proxy` — samtliga med status `Up`.
 
 ---
 
@@ -207,7 +207,7 @@ ssh -p 2222 student@localhost
 Misslyckade och lyckade inloggningar dyker upp i Wazuh-dashboarden under
 **Threat Hunting** → filtrera på `agent.name: offer-ssh`.
 
-### 7b. `offer-juice-shop` — OWASP Juice Shop
+### 7b. `offer-juice-shop` — OWASP Juice Shop (bakom nginx-proxy)
 
 [OWASP Juice Shop](https://owasp.org/www-project-juice-shop/) är en avsiktligt
 sårbar Node.js-webapp som täcker hela OWASP Top 10. Den används flitigt i
@@ -215,7 +215,17 @@ webbsäkerhetskurser — du kanske känner igen den.
 
 - **Bas:** `debian:bookworm-slim` med Wazuh-agent + Juice Shop v17.3.0 (kopierad
   från `bkimminich/juice-shop:v17.3.0`)
-- **Webb-port:** `3000` på din host
+- **Intern port:** `3000` (inte exponerad mot host i denna branch)
+
+På denna branch når du Juice Shop **via nginx-proxy**, inte direkt — se §7c.
+
+### 7c. `nginx-proxy` — reverse proxy framför Juice Shop
+
+- **Bas:** `debian:bookworm-slim` med `nginx`, `rsyslog` och Wazuh-agent
+- **Webb-port:** `3000` på din host (mappar till port `80` i containern)
+- **Roll:** tar emot all webb-trafik och proxar den till `offer-juice-shop:3000`
+  internt. Loggar varje request till `/var/log/nginx/access.log` i Combined
+  Log Format — det Wazuh känner igen out-of-the-box.
 
 **Testa:**
 
@@ -223,17 +233,17 @@ webbsäkerhetskurser — du kanske känner igen den.
 http://localhost:3000
 ```
 
-Containerns app-loggar samlas in av Wazuh-agenten. För att se dem (och alerts
-från SCA-skanningen): filtrera på `agent.name: offer-juice-shop` i
-dashboarden.
+Detta ser exakt ut som Juice Shop direkt — men nu finns nginx i mitten, och
+varje request blir en loggrad som Wazuhs `web-accesslog`-decoder läser.
 
-Mer detaljerade instruktioner — hur du söker, vilka queries som är mest
-användbara, och vad du gör om du saknar specifika events — finns i
-[README-juice-shop-wazuh-status.md](./README-juice-shop-wazuh-status.md).
+**Web-attacker som SIEM:en nu ser:**
+SQL injection, path traversal, reflected XSS, scanner-beteende m.fl. Se
+[README-nginx-attacks.md](./README-nginx-attacks.md) för konkreta
+exempel-attacker att köra mot stacken — och vilka Wazuh-regler som triggas.
 
-> Båda containrarna är medvetet osäkert konfigurerade. De är till för att vi
-> ska kunna SE attacker mot dem i loggarna — kör dem **bara lokalt**, exponera
-> dem aldrig mot internet.
+> Alla offer-containrar är medvetet osäkert konfigurerade. De är till för att
+> vi ska kunna SE attacker mot dem i loggarna — kör dem **bara lokalt**,
+> exponera dem aldrig mot internet.
 
 ---
 
@@ -321,9 +331,9 @@ Docker Desktop är inte igång. Starta det manuellt och försök igen.
 | Stoppa + radera volymer | `docker compose down -v` |
 | Gå in i en container | `docker compose exec <service> bash` |
 | SSH:a till offer-ssh | `ssh -p 2222 student@localhost` |
-| Öppna Juice Shop | `http://localhost:3000` |
+| Öppna Juice Shop (via nginx) | `http://localhost:3000` |
 
-Service-namn i denna miljö: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`, `offer-ssh`, `offer-juice-shop`.
+Service-namn i denna miljö: `wazuh.manager`, `wazuh.indexer`, `wazuh.dashboard`, `offer-ssh`, `offer-juice-shop`, `nginx-proxy`.
 
 ---
 

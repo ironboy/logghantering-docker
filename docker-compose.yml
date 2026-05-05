@@ -17,7 +17,18 @@ services:
     image: logghantering/offer-juice-shop:4.14.4
     hostname: offer-juice-shop
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     depends_on:
       - wazuh.manager
+
+  nginx-proxy:
+    build: ./nginx-proxy
+    image: logghantering/nginx-proxy:4.14.4
+    hostname: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - wazuh.manager
+      - offer-juice-shop
