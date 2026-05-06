@@ -40,6 +40,21 @@ agent.name: "nginx-proxy" AND decoder.name: "web-accesslog"
 Sätt tidsfönstret uppe till höger till "Last 15 minutes" och slå på
 auto-refresh för att se nya alerts flöda in.
 
+### Severity-band i dashboarden
+
+Wazuh-dashboarden grupperar alerts i tre band utifrån `rule.level`:
+
+| Etikett i dashboarden | Rule level | Färg |
+|---|---|---|
+| **Low** | 0–6 | grå/blå |
+| **Medium** | 7–11 | gul |
+| **High** | 12–15 | röd |
+
+Det är värt att notera redan här: **alla Wazuh's web-attack-regler i
+31100-serien har level 5–7**. Det betyder att de flesta web-attacker hamnar
+som "Low" eller precis-på-gränsen-Medium i dashboarden — *trots att de är
+verkliga attackförsök*. Detta är en återkommande pedagogisk poäng nedan.
+
 ---
 
 ## Attack 1 — SQL injection
@@ -86,13 +101,24 @@ password-hash returneras som "produkter". *Faktiskt lyckad SQL injection.*
 rule.id: 31106 AND data.url: "Users"
 ```
 
-### Pedagogisk poäng
+### Pedagogisk poäng — severity-paradoxen
 
-Båda varianterna upptäcks av Wazuh, men med olika regler. Den lyckade
-attacken triggar *en regel som specifikt säger "attack-mönster fick lyckat
-svar"* — det är ofta det första en SOC-analytiker undersöker djupare.
-*Den oförsiktiga* visar tydligare att något är fel (500 + tydlig regel),
-*den lyckade* är subtilare men mer skadlig.
+Båda varianterna upptäcks av Wazuh, men med olika regler och **olika
+severity**:
+
+- **1a (kraschar):** level **7** → klassas som **Medium** i dashboarden
+- **1b (lyckas):** level **6** → klassas som **Low** i dashboarden
+
+Det är paradoxalt: den **lyckade** SQL injection (som faktiskt extraherar
+admin-data) får *lägre* severity än den misslyckade. Anledning: Wazuh kan
+med säkerhet säga att 1a är en SQL-injection (mönstret + 500-error är en
+stark signal). 1b är försiktigare ("attack-mönster fick 200, troligtvis
+suspekt men inte säkert").
+
+> **En SOC som bara filtrerar på "Medium och uppåt" missar lyckade
+> attacker.** Severity är en heuristik, inte sanning. Analytikerns jobb är
+> att förstå *varför* en alert har sin severity, inte bara reagera på
+> siffran.
 
 ---
 
@@ -190,7 +216,7 @@ curl "http://localhost:3000/redirect?to=javascript:alert(1)"
 
 **App-utfall:** HTTP **406** (Not Acceptable — server avvisar).
 
-**Wazuh:** Triggar **rule 31101 — "URL too long" / web attack** (severity 5).
+**Wazuh:** Triggar **rule 31101 — "Web server 400 error code"** (severity 5).
 
 ```
 rule.id: 31101
@@ -271,6 +297,12 @@ och du ska se 4–5 nya alerts från `agent.name: "nginx-proxy"`.
 5. **DOM-baserade attacker är osynliga för server-side SIEM.** URL-
    fragment når aldrig servern, så Wazuh kan inte se dem. Klient-side
    detektion är ett separat säkerhetslager.
+
+6. **Severity är inte sanning.** Wazuh's web-attack-regler hamnar nästan
+   alltid på level 5–7 — det vill säga "Low" eller precis-på-gränsen-
+   Medium i dashboardens default-vy. *Ironiskt nog får en lyckad attack
+   ofta lägre severity än en misslyckad.* En SOC som filtrerar på
+   "Medium+" missar verkliga incidenter.
 
 ---
 
