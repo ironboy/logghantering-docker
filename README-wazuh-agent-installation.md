@@ -630,8 +630,8 @@ att Alpine inte fungerar — det är en realitet i SOC-yrket att inte alla
 endpoints kan ha agent inuti. Den som dokumenterar varför Alpine inte
 funkar har lärt sig mer än den som bara klistrar in ubuntu.
 
-Den som tar B-spåret och dokumenterar friktionen tydligt får äran att
-presentera det på onsdag.
+Tog du B-spåret? Ta med dina anteckningar till onsdag — vi diskuterar
+gärna vad du stötte på.
 
 ---
 
