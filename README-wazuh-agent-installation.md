@@ -533,12 +533,12 @@ Vi använder inte denna strategi i kursen, men det är värt att känna till
 
 | Base-image | Strategi A fungerar? | Notering |
 |---|---|---|
-| `debian:*`, `ubuntu:*` | ✅ Ja | apt + glibc. Vad vi gör i repot. |
-| `rockylinux:*`, `almalinux:*`, `fedora:*` | ✅ Ja | Använd yum/dnf — ändra Dockerfile |
-| `alpine:*` | ❌ **Nej** | Alpine kör **musl libc**, Wazuh-agenten kräver **glibc**. Använd debian-bas eller sidecar. |
-| `distroless/*` | ❌ Nej | Ingen package manager. Använd strategi B (multi-stage). |
-| `scratch` | ❌ Nej | Tom image. Använd strategi B. |
-| `mcr.microsoft.com/windows/*` | ⚠️ Annat | Wazuh har separat Windows-installer (MSI). |
+| `debian:*`, `ubuntu:*` | Ja | apt + glibc. Vad vi gör i repot. |
+| `rockylinux:*`, `almalinux:*`, `fedora:*` | Ja | Använd yum/dnf — ändra Dockerfile |
+| `alpine:*` | **Nej** | Alpine kör **musl libc**, Wazuh-agenten kräver **glibc**. Använd debian-bas eller sidecar. |
+| `distroless/*` | Nej | Ingen package manager. Använd strategi B (multi-stage). |
+| `scratch` | Nej | Tom image. Använd strategi B. |
+| `mcr.microsoft.com/windows/*` | Annat | Wazuh har separat Windows-installer (MSI). |
 
 Alpine-fallet är *särskilt värt* att känna till. Många containers
 (`redis:7-alpine`, `nginx:alpine`, `python:3.12-alpine`) använder
