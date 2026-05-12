@@ -1,6 +1,6 @@
 ## Installera Wazuh-agent — manuellt och i Docker
 
-I denna labbmiljö är agenten **redan installerad** i alla offer-containrar.
+I vår labbmiljö är agenten **redan installerad** i alla offer-containrar.
 Den här artikeln går igenom *hur* den installerades — både i de Dockerfiles
 du har i repot och hur du skulle göra på en "vanlig" Linux-maskin du
 SSH:ar till.
@@ -325,7 +325,7 @@ Två vanliga:
 
 ## Del 5 — I Docker
 
-Här finns flera strategier. Vi använder tre av dem i detta repo.
+Här finns flera strategier. Vi använder tre av dem i vårt repo.
 
 ### 5a. Två filer styr en container — vad gör vad?
 
@@ -550,7 +550,7 @@ gå till strategi D (sidecar) eller byta till en glibc-baserad variant
 
 ## Del 6 — Pedagogisk reflexion: agent ≠ värde
 
-I detta repo har vi installerat Wazuh-agent i fyra olika offer-containrar:
+I vårt repo har vi installerat Wazuh-agent i fyra olika offer-containrar:
 `offer-ssh`, `offer-juice-shop`, `nginx-proxy`, `flog-noise`. Den
 fungerar tekniskt i alla fyra — men de fyller *fyra helt olika roller*:
 
