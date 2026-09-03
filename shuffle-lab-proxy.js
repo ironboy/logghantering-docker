@@ -15,6 +15,12 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // ENDAST LABB: lita på Wazuhs
 // självsignerade cert. Ofarligt här: det hoppet går localhost -> localhost.
 
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+// Loggfil bredvid scriptet - gitignorad (se .gitignore). Lätt att hitta,
+// lätt att radera. Terminalen visar samma sak live under demon.
+const LOG_FILE = path.join(__dirname, 'shuffle-lab.log');
 
 const PORT = process.env.PORT || 3010;
 const INDEXER = 'https://localhost:9200';
@@ -27,9 +33,13 @@ const server = http.createServer(async (req, res) => {
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
-      console.log('\n=== INCIDENT ' + new Date().toLocaleString('sv-SE') + ' ===');
-      try { console.log(JSON.stringify(JSON.parse(body), null, 2)); }
-      catch { console.log(body); }
+      const header = '\n=== INCIDENT ' + new Date().toLocaleString('sv-SE') + ' ===';
+      let pretty;
+      try { pretty = JSON.stringify(JSON.parse(body), null, 2); }
+      catch { pretty = body; }
+      console.log(header);
+      console.log(pretty);
+      fs.appendFileSync(LOG_FILE, header + '\n' + pretty + '\n');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{"ok":true}');
     });
